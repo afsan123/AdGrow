@@ -72,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
                 logoView.setVisibility(View.INVISIBLE);
                 //waveView.setVisibility(View.INVISIBLE);
                 profilePic.setVisibility(View.VISIBLE);
-                userName.setVisibility(View.VISIBLE);
+                userName.setVisibility(View.INVISIBLE);
 
             }
 
