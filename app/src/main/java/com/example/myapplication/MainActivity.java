@@ -43,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView recyclerView;
     RecyclerView.LayoutManager layoutManager;
     private TextView userName;
+    private View waveView;
+    private ImageView logoView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
         loginButton = findViewById(R.id.login_button);
         profilePic = findViewById(R.id.profile_pic);
         userName = findViewById(R.id.user_nameui);
+        waveView = findViewById(R.id.view2);
+        logoView = findViewById(R.id.logoImageView);
         recyclerView = findViewById(R.id.rv_page_list);
 
         profilePic.setVisibility(View.INVISIBLE);
@@ -65,8 +69,11 @@ public class MainActivity extends AppCompatActivity {
         loginButton.registerCallback(callbackManager, new FacebookCallback<LoginResult>() {
             @Override
             public void onSuccess(LoginResult loginResult) {
+                logoView.setVisibility(View.INVISIBLE);
+                //waveView.setVisibility(View.INVISIBLE);
                 profilePic.setVisibility(View.VISIBLE);
                 userName.setVisibility(View.VISIBLE);
+
             }
 
             @Override
@@ -141,6 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 LoginManager.getInstance().logOut();
                 userName.setText("");
                 profilePic.setImageResource(0);
+                logoView.setVisibility(View.VISIBLE);
             }
         }
     };
