@@ -12,6 +12,7 @@ import com.facebook.FacebookException;
 import com.facebook.FacebookSdk;
 import com.facebook.GraphRequest;
 import com.facebook.GraphResponse;
+import com.facebook.HttpMethod;
 import com.facebook.appevents.AppEventsLogger;
 import com.facebook.login.LoginManager;
 import com.facebook.login.LoginResult;
@@ -19,13 +20,16 @@ import com.facebook.login.widget.LoginButton;
 import com.squareup.picasso.Picasso;
 
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Adapter;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -45,12 +49,14 @@ public class MainActivity extends AppCompatActivity {
     private TextView userName;
     private View waveView;
     private ImageView logoView;
+    String id;
+    SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        sharedPreferences = getSharedPreferences("AdsGrow", Context.MODE_PRIVATE);
         loginButton = findViewById(R.id.login_button);
         profilePic = findViewById(R.id.profile_pic);
         userName = findViewById(R.id.user_nameui);
@@ -86,22 +92,45 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        id = sharedPreferences.getString("id", null);
+        if (id != null) {
+            String path = "/" + id + "/assigned_pages";
+            new GraphRequest(
+                    AccessToken.getCurrentAccessToken(),
+                    path,
+                    null,
+                    HttpMethod.GET,
+                    new GraphRequest.Callback() {
+                        public void onCompleted(GraphResponse response) {
+                            /* handle the result */
+                            if (response.getRawResponse() != null) {
+                                Log.d("pageResponse", response.getRawResponse());
+                            } else {
+                                Toast.makeText(MainActivity.this, response.getError().getErrorMessage(), Toast.LENGTH_SHORT).show();
+                                Log.d("pageGetError", response.getError().getErrorMessage());
+                            }
+                        }
+
+                    }
+            ).executeAsync();
+        }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        callbackManager.onActivityResult(requestCode, resultCode, data);
         super.onActivityResult(requestCode, resultCode, data);
-
+        callbackManager.onActivityResult(requestCode, resultCode, data);
+        Log.d("activityResultCalled", "called");
         GraphRequest graphRequest = GraphRequest.newMeRequest(AccessToken.getCurrentAccessToken(), new GraphRequest.GraphJSONObjectCallback() {
             @Override
             public void onCompleted(JSONObject object, GraphResponse response) {
-                Log.d("Demo", object.toString());
                 try {
                     String name = object.getString("name");
                     userName.setText(name);
-                    String id = object.getString("id");
+                    id = object.getString("id");
+                    sharedPreferences.edit().putString("id", id).apply();
                     Picasso.get().load("https://graph.facebook.com/" + id + "/picture?type=large").into(profilePic);
+                    Log.d("fbId", id);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
@@ -114,30 +143,31 @@ public class MainActivity extends AppCompatActivity {
         graphRequest.setParameters(bundle);
         graphRequest.executeAsync();
 
-        GraphRequest graphRequestFriends = GraphRequest.newMyFriendsRequest(AccessToken.getCurrentAccessToken(), new GraphRequest.GraphJSONArrayCallback() {
-            @Override
-            public void onCompleted(JSONArray objects, GraphResponse response) {
-                Log.d("DemoFriends", objects.toString());
-                ArrayList<FBPage> fbPages = new ArrayList<>();
+//        GraphRequest graphRequestFriends = GraphRequest.newMyFriendsRequest(AccessToken.getCurrentAccessToken(), new GraphRequest.GraphJSONArrayCallback() {
+//            @Override
+//            public void onCompleted(JSONArray objects, GraphResponse response) {
+//                Log.d("DemoFriends", objects.toString());
+//                ArrayList<FBPage> fbPages = new ArrayList<>();
+//
+//                for (int i = 0 ; i < objects.length() ; i++) {
+//                    try {
+//                        JSONObject jsonObject = objects.getJSONObject(i);
+//                        fbPages.add(new FBPage(jsonObject.getString("id"), jsonObject.getString("name")));
+//                    } catch (JSONException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//
+//                layoutManager = new LinearLayoutManager(MainActivity.this);
+//                recyclerView.setLayoutManager(layoutManager);
+//
+//                myAdapter = new MyAdapter(fbPages);
+//                recyclerView.setAdapter(myAdapter);
+//            }
+//        });
+//
+//        graphRequestFriends.executeAsync();
 
-                for (int i = 0 ; i < objects.length() ; i++) {
-                    try {
-                        JSONObject jsonObject = objects.getJSONObject(i);
-                        fbPages.add(new FBPage(jsonObject.getString("id"), jsonObject.getString("name")));
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                layoutManager = new LinearLayoutManager(MainActivity.this);
-                recyclerView.setLayoutManager(layoutManager);
-
-                myAdapter = new MyAdapter(fbPages);
-                recyclerView.setAdapter(myAdapter);
-            }
-        });
-
-        graphRequestFriends.executeAsync();
     }
 
     AccessTokenTracker accessTokenTracker = new AccessTokenTracker() {
